@@ -255,6 +255,74 @@ public class OptionalHeader implements IJSONWritable, IStreamReadable, IStreamWr
         }
     }
 
+    public class RVASizePair implements IStreamReadable, IStreamWritable, IJSONWritable {
+        public int virtual_address;
+        public int size;
+
+        @Override
+        public void ReadFromStream(FileInputStream istr){
+            virtual_address = StreamReader.ReadLE32(istr);
+            size = StreamReader.ReadLE32(istr);
+        }
+        @Override
+        public void WriteToStream(FileOutputStream ostr){
+            StreamWriter.WriteLE32(ostr, virtual_address);
+            StreamWriter.WriteLE32(ostr, size);
+        }
+        @Override
+        public void WriteJSON(FileWriter ostr, IJSONWritable.Formatting formatting){
+            IJSONWritable.WriteHex32(ostr, "Virtual Address", virtual_address, formatting, false);
+            IJSONWritable.WriteU32(ostr, "Size", size, formatting, true);
+        }
+    }
+    public class RVASizeTable implements IStreamReadable, IStreamWritable, IJSONWritable {
+        public int number_of_rva_and_sizes;
+        public RVASizePair[] rva_size_pairs;
+
+        private static final String[] table_names_array = {
+            "Export Table",
+            "Import Table",
+            "Resource Table",
+            "Exception Table",
+            "Certificate Table",
+            "Base Relocation Table",
+            "Debug",
+            "Architecture", //Reserved Must Be Zero
+            "Global Ptr",
+            "TLS Table",
+            "Load Config Table",
+            "Bound Import",
+            "IAT",
+            "Delay Import Descriptor",
+            "CLR Runtime Header",
+            "Reserved"
+        };
+
+        @Override
+        public void ReadFromStream(FileInputStream istr){
+            number_of_rva_and_sizes = StreamReader.ReadLE32(istr);
+            rva_size_pairs = new RVASizePair[number_of_rva_and_sizes];
+            for(int i = 0; i < number_of_rva_and_sizes; i++){
+                rva_size_pairs[i] = new RVASizePair();
+                rva_size_pairs[i].ReadFromStream(istr);
+            }
+        }
+        @Override
+        public void WriteToStream(FileOutputStream ostr){
+            StreamWriter.WriteLE32(ostr, number_of_rva_and_sizes);
+            for(int i = 0; i < number_of_rva_and_sizes; i++){
+                rva_size_pairs[i].WriteToStream(ostr);
+            }
+        }
+        @Override
+        public void WriteJSON(FileWriter ostr, IJSONWritable.Formatting formatting){
+            IJSONWritable.WriteU32(ostr, "Count", number_of_rva_and_sizes, formatting, false);
+            for(int i = 0; i < number_of_rva_and_sizes; i++){
+                IJSONWritable.WriteObject(ostr, table_names_array[i], rva_size_pairs[i], formatting, (i == (number_of_rva_and_sizes-1)));
+            }
+        }    
+    }
+
     MagicNumber magic_number;
     StandardFields standard_fields = new StandardFields();
 
@@ -262,7 +330,7 @@ public class OptionalHeader implements IJSONWritable, IStreamReadable, IStreamWr
     PE32WindowsFields pe32 = null;
     PE32PlusWindowsFields pe32plus = null;
 //
-
+    RVASizeTable rva_size_table = new RVASizeTable();
 
     @Override
     public void ReadFromStream(FileInputStream istr){
@@ -280,6 +348,7 @@ public class OptionalHeader implements IJSONWritable, IStreamReadable, IStreamWr
             pe32plus = new PE32PlusWindowsFields();
             pe32plus.ReadFromStream(istr);
         }
+        rva_size_table.ReadFromStream(istr);
     }
     @Override
     public void WriteToStream(FileOutputStream ostr){
@@ -294,19 +363,21 @@ public class OptionalHeader implements IJSONWritable, IStreamReadable, IStreamWr
         else{
             System.err.println("ERROR: Both PE32 And PE32+ Are Defined Within A Single Optional Header!");
         }
+        rva_size_table.WriteToStream(ostr);
     }
     @Override
     public void WriteJSON(FileWriter ostr, IJSONWritable.Formatting formatting) {
         IJSONWritable.WriteU16(ostr, "Magic Number", magic_number.val, formatting, false);
         IJSONWritable.WriteObject(ostr, "Standard Fields", standard_fields, formatting, false);
         if((pe32 != null) && (pe32plus == null)){
-            IJSONWritable.WriteObject(ostr, "PE32 Fields", pe32, formatting, true);
+            IJSONWritable.WriteObject(ostr, "PE32 Fields", pe32, formatting, false);
         }
         else if((pe32plus != null) && (pe32 == null)){
-            IJSONWritable.WriteObject(ostr, "PE32+ Fields", pe32plus, formatting, true);
+            IJSONWritable.WriteObject(ostr, "PE32+ Fields", pe32plus, formatting, false);
         }
         else{
             System.err.println("ERROR: Both PE32 And PE32+ Are Defined Within A Single Optional Header!");
         }
+        IJSONWritable.WriteObject(ostr, "RVA And Sizes Table", rva_size_table, formatting, true);
     }
 }

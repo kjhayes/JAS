@@ -20,6 +20,7 @@ public class PEFile implements IStreamReadable, IStreamWritable, IJSONWritable {
     int pe_signature;
     COFFHeader coffHeader = new COFFHeader();
     OptionalHeader optionalHeader = new OptionalHeader();
+    SectionHeaderTable sectionHeaderTable;
 
     //Methods//
     @Override
@@ -34,6 +35,9 @@ public class PEFile implements IStreamReadable, IStreamWritable, IJSONWritable {
         pe_signature = StreamReader.ReadLE32(istr);
         coffHeader.ReadFromStream(istr);
         optionalHeader.ReadFromStream(istr);
+
+        sectionHeaderTable = new SectionHeaderTable(coffHeader.number_of_sections);
+        sectionHeaderTable.ReadFromStream(istr);
     }
     @Override 
     public void WriteToStream(FileOutputStream ostr){
@@ -44,13 +48,15 @@ public class PEFile implements IStreamReadable, IStreamWritable, IJSONWritable {
         StreamWriter.WriteLE32(ostr, pe_signature);
         coffHeader.WriteToStream(ostr);
         optionalHeader.WriteToStream(ostr);
+        sectionHeaderTable.WriteToStream(ostr);
     }
     @Override
     public void WriteJSON(FileWriter ostr, IJSONWritable.Formatting formatting){
         IJSONWritable.WriteObject(ostr, "DOS Header", dosHeader, formatting, false);
         IJSONWritable.WriteU64(ostr, "PE Signature", pe_signature, formatting, false);
         IJSONWritable.WriteObject(ostr, "COFF Header", coffHeader, formatting, false);
-        IJSONWritable.WriteObject(ostr, "Optional Header", optionalHeader, formatting, true);
+        IJSONWritable.WriteObject(ostr, "Optional Header", optionalHeader, formatting, false);
+        IJSONWritable.WriteObject(ostr, "Section Header Table", sectionHeaderTable, formatting, true);
     }
     //
 }

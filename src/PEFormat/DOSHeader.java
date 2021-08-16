@@ -90,7 +90,7 @@ public class DOSHeader implements IStreamReadable, IStreamWritable, IJSONWritabl
     }
     @Override
     public void WriteJSON(FileWriter ostr, IJSONWritable.Formatting formatting) {
-        IJSONWritable.WriteU16(ostr, "Magic Number", magic_number, formatting, false);
+        IJSONWritable.WriteHex16(ostr, "Magic Number", magic_number, formatting, false);
         IJSONWritable.WriteU16(ostr, "Bytes On Last Page Of File", bytes_on_last_page_of_file, formatting, false);
         IJSONWritable.WriteU16(ostr, "Pages In File", pages_in_file, formatting, false);
         IJSONWritable.WriteU16(ostr, "Relocations", relocations, formatting, false);
@@ -104,22 +104,22 @@ public class DOSHeader implements IStreamReadable, IStreamWritable, IJSONWritabl
         IJSONWritable.WriteU16(ostr, "Initial Relative CS", initial_relative_cs, formatting, false);
         IJSONWritable.WriteU16(ostr, "File Address Of Relocation Table", relocation_table_address, formatting, false);
         IJSONWritable.WriteU16(ostr, "Overlay Number", overlay_number, formatting, false);
-        IJSONWritable.WriteU16(ostr, "Reserved Words [0]", reserved_words[0], formatting, false);
-        IJSONWritable.WriteU16(ostr, "Reserved Words [1]", reserved_words[1], formatting, false);
-        IJSONWritable.WriteU16(ostr, "Reserved Words [2]", reserved_words[2], formatting, false);
-        IJSONWritable.WriteU16(ostr, "Reserved Words [3]", reserved_words[3], formatting, false);
+        
+        IJSONWritable.BeginWriteArray(ostr, "Reserved Words", formatting);
+        for(int i = 0; i < 4; i++){
+            IJSONWritable.WriteArrayHex16(ostr, reserved_words[i], formatting, (i==3));
+        }
+        IJSONWritable.EndWriteArray(ostr, formatting, false);
+
         IJSONWritable.WriteU16(ostr, "OEM Identifier", oem_identifier, formatting, false);
         IJSONWritable.WriteU16(ostr, "OEM Information", oem_info, formatting, false);
-        IJSONWritable.WriteU16(ostr, "Reserved Words 2 [0]", reserved_words_2[0], formatting, false);
-        IJSONWritable.WriteU16(ostr, "Reserved Words 2 [1]", reserved_words_2[1], formatting, false);
-        IJSONWritable.WriteU16(ostr, "Reserved Words 2 [2]", reserved_words_2[2], formatting, false);
-        IJSONWritable.WriteU16(ostr, "Reserved Words 2 [3]", reserved_words_2[3], formatting, false);
-        IJSONWritable.WriteU16(ostr, "Reserved Words 2 [4]", reserved_words_2[4], formatting, false);
-        IJSONWritable.WriteU16(ostr, "Reserved Words 2 [5]", reserved_words_2[5], formatting, false);
-        IJSONWritable.WriteU16(ostr, "Reserved Words 2 [6]", reserved_words_2[6], formatting, false);
-        IJSONWritable.WriteU16(ostr, "Reserved Words 2 [7]", reserved_words_2[7], formatting, false);
-        IJSONWritable.WriteU16(ostr, "Reserved Words 2 [8]", reserved_words_2[8], formatting, false);
-        IJSONWritable.WriteU16(ostr, "Reserved Words 2 [9]", reserved_words_2[9], formatting, false);
+
+        IJSONWritable.BeginWriteArray(ostr, "Reserved Words 2", formatting);
+        for(int i = 0; i < 10; i++){
+            IJSONWritable.WriteArrayHex16(ostr, reserved_words_2[i], formatting, (i==9));
+        }
+        IJSONWritable.EndWriteArray(ostr, formatting, false);
+
         IJSONWritable.WriteU64(ostr, "File Address Of New Exe Header", new_exe_header_address, formatting, true);
     }
 }
